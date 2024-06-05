@@ -1,0 +1,11 @@
+services:
+  mariadb:
+    image: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: test-db
+      MYSQL_USER: cats4ever
+      MYSQL_PASSWORD: cats4life
+      MYSQL_DATABASE: yuka_produit
+      MARIADB_INITDB_ARGS: "--collation=utf8mb4_general_ci --character-set-server=utf8mb4"
+    ports:
+      - "3306:3306"
