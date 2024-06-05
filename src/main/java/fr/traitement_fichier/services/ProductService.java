@@ -2,7 +2,9 @@ package fr.traitement_fichier.services;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import fr.traitement_fichier.entities.Additive;
 import fr.traitement_fichier.entities.Allergen;
@@ -14,7 +16,6 @@ import fr.traitement_fichier.entities.Product;
 import fr.traitement_fichier.utils.ParseUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.TypedQuery;
 
 public class ProductService {
     private static int ID_CATEGORY = 0;
@@ -27,12 +28,23 @@ public class ProductService {
     private static int ID_SALT = 10;
     private static int ID_ALLERGENS = 28;
     private static int ID_ADDITIVES = 29;
+    public static int BATCH_SIZE = 1300;
+
+    private Map<String, BaseEntity> inMemoryEntities = new HashMap<>();
+
+    public void processProductsInBatches(EntityManager entityManager, List<Product> products) {
+        EntityTransaction transaction = entityManager.getTransaction();
+        transaction.begin();
+    
+        for (Product product : products) {
+            entityManager.persist(product);
+        }
+    
+        transaction.commit();
+    }
 
     public Product createProductInDatabase(EntityManager entityManager, String line) {
         String[] splittedLine = line.split("\\|", -1);
-
-        EntityTransaction entityTransaction = entityManager.getTransaction();
-        entityTransaction.begin();
 
         Category category = createEntityInDatabase(entityManager, Category.class, splittedLine[ID_CATEGORY]);
         Brand brand = createEntityInDatabase(entityManager, Brand.class, splittedLine[ID_BRAND]);
@@ -70,26 +82,18 @@ public class ProductService {
                 additives,
                 allergens);
 
-        entityManager.persist(product);
-
-        entityTransaction.commit();
-
         return product;
     }
 
-    public static <T extends BaseEntity> T createEntityInDatabase(EntityManager entityManager, Class<T> entityType,
+    private <T extends BaseEntity> T createEntityInDatabase(EntityManager entityManager, Class<T> entityType,
             String label) {
-        TypedQuery<T> query = entityManager
-                .createQuery("SELECT e FROM " + entityType.getSimpleName() + " e WHERE e.label = :label", entityType);
-        query.setParameter("label", label);
-
-        List<T> entities = query.getResultList();
+        T existingEntity = (T) inMemoryEntities.get(generateCompositeKey(entityType, label));
 
         if (label.equals("")) {
             return null;
         }
 
-        if (entities.isEmpty()) {
+        if (existingEntity == null) {
             T entity = null;
             try {
                 entity = entityType.getDeclaredConstructor(String.class).newInstance(label);
@@ -98,14 +102,15 @@ public class ProductService {
                 e.printStackTrace();
             }
 
-            entityManager.persist(entity);
+            inMemoryEntities.put(generateCompositeKey(entityType, label), entity);
+
             return entity;
         }
 
-        return entities.get(0);
+        return existingEntity;
     }
 
-    public static <T extends BaseEntity> List<T> createMultipleEntitiesInDatabase(EntityManager entityManager,
+    private <T extends BaseEntity> List<T> createMultipleEntitiesInDatabase(EntityManager entityManager,
             Class<T> entityType, String lineToSplit, String regexSeparator) {
 
         String[] splittedLine = lineToSplit.split(regexSeparator);
@@ -121,4 +126,9 @@ public class ProductService {
 
         return entities;
     }
+
+    private String generateCompositeKey(Class<? extends BaseEntity> entityType, String entityValue) {
+        return entityType.getSimpleName() + ":" + entityValue;
+    }
+    
 }

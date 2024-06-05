@@ -28,7 +28,15 @@ public class Main {
             List<Product> products = new ArrayList<>();
             lines.skip(1).forEach(line -> {
                 products.add(productService.createProductInDatabase(entityManager, line));
+                if (products.size() >= ProductService.BATCH_SIZE) {
+                    productService.processProductsInBatches(entityManager, products);
+                    products.clear();
+                }
             });
+
+            if (!products.isEmpty()) {
+                productService.processProductsInBatches(entityManager, products);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
