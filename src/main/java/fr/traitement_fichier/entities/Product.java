@@ -2,6 +2,7 @@ package fr.traitement_fichier.entities;
 
 import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -23,11 +24,11 @@ public class Product {
     @Column(name = "NOM")
     private String name;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "ID_CATEGORIE")
     private Category category;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "ID_MARQUE")
     private Brand brand;
 
@@ -43,7 +44,7 @@ public class Product {
     @Column(name = "SUCRE")
     private int carbs;
 
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(
         name = "PRODUITS_INGREDIENTS",
         joinColumns = @JoinColumn(name = "ID_PRODUIT", referencedColumnName = "ID"),
@@ -51,7 +52,7 @@ public class Product {
     )
     private List<Ingredient> ingredients;
 
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(
         name = "PRODUITS_ADDITIFS",
         joinColumns = @JoinColumn(name = "ID_PRODUIT", referencedColumnName = "ID"),
@@ -59,7 +60,7 @@ public class Product {
     )
     private List<Additive> additives;
 
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(
         name = "PRODUITS_ALLERGENES",
         joinColumns = @JoinColumn(name = "ID_PRODUIT", referencedColumnName = "ID"),

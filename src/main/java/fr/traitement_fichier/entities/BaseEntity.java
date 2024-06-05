@@ -12,7 +12,7 @@ public abstract class BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(name = "LIBELLE")
+    @Column(name = "LIBELLE", length = 1024)
     private String label;
 
     public BaseEntity() {}
