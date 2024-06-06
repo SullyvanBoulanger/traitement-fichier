@@ -30,41 +30,41 @@ public class ProductService {
     private static int ID_ADDITIVES = 29;
     public static int BATCH_SIZE = 1300;
 
-    private Map<String, BaseEntity> inMemoryEntities = new HashMap<>();
+    private Map<String, BaseEntity> inMemoryBaseEntities = new HashMap<>();
 
     public void processProductsInBatches(EntityManager entityManager, List<Product> products) {
         EntityTransaction transaction = entityManager.getTransaction();
         transaction.begin();
-    
+
         for (Product product : products) {
             entityManager.persist(product);
         }
-    
+
         transaction.commit();
     }
 
-    public Product createProductInDatabase(EntityManager entityManager, String line) {
+    public Product createProduct(EntityManager entityManager, String line) {
         String[] splittedLine = line.split("\\|", -1);
 
-        Category category = createEntityInDatabase(entityManager, Category.class, splittedLine[ID_CATEGORY]);
-        Brand brand = createEntityInDatabase(entityManager, Brand.class, splittedLine[ID_BRAND]);
+        Category category = createBaseEntity(entityManager, Category.class, splittedLine[ID_CATEGORY]);
+        Brand brand = createBaseEntity(entityManager, Brand.class, splittedLine[ID_BRAND]);
         String name = splittedLine[ID_NAME];
         String nutrionalScore = splittedLine[ID_NUTRIONAL_SCORE];
         int energy = ParseUtils.parseInt(splittedLine[ID_ENERGY]);
         int carbs = ParseUtils.parseInt(splittedLine[ID_CARBS]);
         int salt = ParseUtils.parseInt(splittedLine[ID_SALT]);
 
-        List<Ingredient> ingredients = createMultipleEntitiesInDatabase(
+        List<Ingredient> ingredients = createMultipleBaseEntities(
                 entityManager,
                 Ingredient.class,
                 splittedLine[ID_INGREDIENTS],
                 ",|;|-");
-        List<Allergen> allergens = createMultipleEntitiesInDatabase(
+        List<Allergen> allergens = createMultipleBaseEntities(
                 entityManager,
                 Allergen.class,
                 splittedLine[ID_ALLERGENS],
                 ",");
-        List<Additive> additives = createMultipleEntitiesInDatabase(
+        List<Additive> additives = createMultipleBaseEntities(
                 entityManager,
                 Additive.class,
                 splittedLine[ID_ADDITIVES],
@@ -85,15 +85,17 @@ public class ProductService {
         return product;
     }
 
-    private <T extends BaseEntity> T createEntityInDatabase(EntityManager entityManager, Class<T> entityType,
+    private <T extends BaseEntity> T createBaseEntity(EntityManager entityManager, Class<T> entityType,
             String label) {
-        T existingEntity = (T) inMemoryEntities.get(generateCompositeKey(entityType, label));
-
         if (label.equals("")) {
             return null;
         }
 
-        if (existingEntity == null) {
+        BaseEntity existingEntity = inMemoryBaseEntities.get(generateCompositeKey(entityType, label));
+
+        if (entityType.isInstance(existingEntity)) {
+            return entityType.cast(existingEntity);
+        } else {
             T entity = null;
             try {
                 entity = entityType.getDeclaredConstructor(String.class).newInstance(label);
@@ -102,15 +104,13 @@ public class ProductService {
                 e.printStackTrace();
             }
 
-            inMemoryEntities.put(generateCompositeKey(entityType, label), entity);
+            inMemoryBaseEntities.put(generateCompositeKey(entityType, label), entity);
 
             return entity;
         }
-
-        return existingEntity;
     }
 
-    private <T extends BaseEntity> List<T> createMultipleEntitiesInDatabase(EntityManager entityManager,
+    private <T extends BaseEntity> List<T> createMultipleBaseEntities(EntityManager entityManager,
             Class<T> entityType, String lineToSplit, String regexSeparator) {
 
         String[] splittedLine = lineToSplit.split(regexSeparator);
@@ -121,7 +121,7 @@ public class ProductService {
             return entities;
 
         for (String label : splittedLine) {
-            entities.add(createEntityInDatabase(entityManager, entityType, label));
+            entities.add(createBaseEntity(entityManager, entityType, label));
         }
 
         return entities;
@@ -130,5 +130,5 @@ public class ProductService {
     private String generateCompositeKey(Class<? extends BaseEntity> entityType, String entityValue) {
         return entityType.getSimpleName() + ":" + entityValue;
     }
-    
+
 }

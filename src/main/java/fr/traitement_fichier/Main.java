@@ -27,7 +27,7 @@ public class Main {
         try (Stream<String> lines = Files.lines(path)) {
             List<Product> products = new ArrayList<>();
             lines.skip(1).forEach(line -> {
-                products.add(productService.createProductInDatabase(entityManager, line));
+                products.add(productService.createProduct(entityManager, line));
                 if (products.size() >= ProductService.BATCH_SIZE) {
                     productService.processProductsInBatches(entityManager, products);
                     products.clear();
