@@ -87,24 +87,25 @@ public class ProductService {
 
     private <T extends BaseEntity> T createBaseEntity(EntityManager entityManager, Class<T> entityType,
             String label) {
-        if (label.equals("")) {
+        String treatedLabel = preTreatLabel(label);
+        if (treatedLabel.equals("")) {
             return null;
         }
 
-        BaseEntity existingEntity = inMemoryBaseEntities.get(generateCompositeKey(entityType, label));
+        BaseEntity existingEntity = inMemoryBaseEntities.get(generateCompositeKey(entityType, treatedLabel));
 
         if (entityType.isInstance(existingEntity)) {
             return entityType.cast(existingEntity);
         } else {
             T entity = null;
             try {
-                entity = entityType.getDeclaredConstructor(String.class).newInstance(label);
+                entity = entityType.getDeclaredConstructor(String.class).newInstance(treatedLabel);
             } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
                     | InvocationTargetException | NoSuchMethodException | SecurityException e) {
                 e.printStackTrace();
             }
 
-            inMemoryBaseEntities.put(generateCompositeKey(entityType, label), entity);
+            inMemoryBaseEntities.put(generateCompositeKey(entityType, treatedLabel), entity);
 
             return entity;
         }
@@ -128,7 +129,25 @@ public class ProductService {
     }
 
     private String generateCompositeKey(Class<? extends BaseEntity> entityType, String entityValue) {
-        return entityType.getSimpleName() + ":" + entityValue;
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(entityType.getSimpleName()).append(":").append(entityValue);
+
+        return stringBuilder.toString();
     }
 
+    private String preTreatLabel(String label) {
+        String result = label
+                .trim()
+                .replace("*", "")
+                .replace("_", "")
+                .toLowerCase();
+        if(result.endsWith("."))
+            result = result.substring(0, result.length() -1);
+
+        if (result.startsWith("en:") || result.startsWith("fr:")) {
+            return result.substring(3);
+        }
+
+        return result;
+    }
 }
