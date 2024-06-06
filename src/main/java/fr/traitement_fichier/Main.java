@@ -18,7 +18,7 @@ public class Main {
 
     public static void main(String[] args) {
         Path path = Paths.get("./open-food-facts.csv");
-        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("banque");
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("yuka_produit");
 
         EntityManager entityManager = entityManagerFactory.createEntityManager();
 
